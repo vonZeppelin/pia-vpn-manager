@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 
-import cgi, json, subprocess, sys
+import cgi, collections, json, subprocess, sys
 import http.server as server
 import urllib.request as request
 
-from collections import ChainMap
+from http import HTTPStatus
 from os import path
 from string import Template
 
@@ -64,11 +64,13 @@ def exec_pia_cmd(cmd):
 
 def update_tmission_settings(bind_addr, bind_port):
     with open(TMISSION_CFG + ".tpl") as settings_tpl:
-        settings = Template(settings_tpl.read()).safe_substitute(
-            bindaddr=bind_addr, bindport=bind_port
-        )
+        settings = json.load(settings_tpl)
+        settings.update({
+            "bind-address-ipv4": bind_addr,
+            "peer-port": bind_port
+        })
     with open(TMISSION_CFG, "w") as settings_file:
-        settings_file.write(settings)
+        json.dump(settings, settings_file)
 
 
 def process_openvpn_evt(cmd, bind_addr, evt):
@@ -84,22 +86,26 @@ def process_openvpn_evt(cmd, bind_addr, evt):
 
 
 def start_web_server():
+    with open(path.join(ME_DIR, "pia.html")) as html_file:
+        html_template = Template(html_file.read())
+
     class RequestHandler(server.BaseHTTPRequestHandler):
         def log_message(*args):
             pass
 
-        def do_GET(self):
-            self.send_response(200)
+        def do_HEAD(self):
+            self.send_response(HTTPStatus.OK)
             self.send_header("Content-type", "text/html")
             self.end_headers()
 
-            with open(path.join(ME_DIR, "pia.html")) as html_file:
-                tpl_params = ChainMap(
-                    self._get_process_status(TMISSION_DAEMON_NAME, "tmission"),
-                    self._get_process_status(VPN_DAEMON_NAME, "pia")
-                )
-                html = Template(html_file.read()).safe_substitute(**tpl_params)
-                self.wfile.write(bytes(html, "utf-8"))
+        def do_GET(self):
+            tpl_params = collections.ChainMap(
+                self._get_process_status(TMISSION_DAEMON_NAME, "tmission"),
+                self._get_process_status(VPN_DAEMON_NAME, "pia")
+            )
+            html = html_template.safe_substitute(**tpl_params)
+            self.do_HEAD()
+            self.wfile.write(bytes(html, "utf-8"))
 
         def do_POST(self):
             form = cgi.FieldStorage(
@@ -115,7 +121,7 @@ def start_web_server():
             elif service == "pia":
                 exec_pia_cmd(cmd)
 
-            self.send_response(301)
+            self.send_response(HTTPStatus.MOVED_PERMANENTLY)
             self.send_header("Location", "/")
             self.end_headers()
 
