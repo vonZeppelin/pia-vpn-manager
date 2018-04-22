@@ -10,17 +10,17 @@ from string import Template
 
 ME = path.abspath(__file__)
 ME_DIR = path.dirname(ME)
+PIA_CLIENT_ID = "<put_random_id_here>"
+TMISSION_CFG = "/etc/transmission-daemon/settings.json"
 TMISSION_DAEMON_NAME = "transmission-daemon"
 VPN_DAEMON_NAME = "pia-vpn"
-TMISSION_CFG = "/etc/transmission-daemon/settings.json"
-PIA_CLIENT_ID = "<put_random_id_here>"
 
 
 def start_vpn():
-    subprocess.run(
+    subprocess.check_call(
         [
             "openvpn",
-            "--config", "Netherlands.ovpn",
+            "--config", "CA Toronto.ovpn",
             "--auth-user-pass", "pia-passwd",
             "--dev", "pia-tun",
             "--dev-type", "tun",
@@ -28,28 +28,26 @@ def start_vpn():
             "--script-security", "2",
             "--up", ME + " \"up\"",
             "--down", ME + " \"down\"",
-            "--up-restart",
-            "--persist-tun"
+            "--up-restart"
         ],
-        cwd=path.join(ME_DIR, "pia"),
-        check=True
+        cwd=path.join(ME_DIR, "pia")
     )
 
 
 def stop_vpn():
-    subprocess.run(["pkill", "-SIGTERM", "-f", VPN_DAEMON_NAME])
+    subprocess.call(["pkill", "-SIGTERM", "-f", VPN_DAEMON_NAME])
 
 
 def request_pia_fw_port():
     api_url = "http://209.222.18.222:2000/?client_id=" + PIA_CLIENT_ID
     with request.urlopen(api_url, timeout=5) as resp:
-        resp_charset = resp.info().get_param('charset') or 'ascii'
+        resp_charset = resp.info().get_param("charset") or "ascii"
         resp_str = resp.read().decode(resp_charset)
         return int(json.loads(resp_str)["port"])
 
 
 def exec_tmission_cmd(cmd):
-    subprocess.run(
+    subprocess.call(
         ["/etc/init.d/" + TMISSION_DAEMON_NAME, cmd],
         stdout=subprocess.DEVNULL
     )
@@ -78,7 +76,7 @@ def process_openvpn_evt(cmd, bind_addr, evt):
         if evt == "init":
             fw_port = request_pia_fw_port()
             update_tmission_settings(bind_addr, fw_port)
-        exec_tmission_cmd("start")
+        exec_tmission_cmd("restart")
     elif cmd == "down":
         exec_tmission_cmd("stop")
     else:
@@ -101,7 +99,8 @@ def start_web_server():
         def do_GET(self):
             tpl_params = collections.ChainMap(
                 self._get_process_status(TMISSION_DAEMON_NAME, "tmission"),
-                self._get_process_status(VPN_DAEMON_NAME, "pia")
+                self._get_process_status(VPN_DAEMON_NAME, "pia"),
+                {"path": self.path}
             )
             html = html_template.safe_substitute(**tpl_params)
             self.do_HEAD()
@@ -122,16 +121,16 @@ def start_web_server():
                 exec_pia_cmd(cmd)
 
             self.send_response(HTTPStatus.MOVED_PERMANENTLY)
-            self.send_header("Location", "/")
+            self.send_header("Location", self.path)
             self.end_headers()
 
         @staticmethod
         def _get_process_status(process_name, key_prefix):
-            proc = subprocess.run(
+            proc_returncode = subprocess.call(
                 ["pgrep", "-f", process_name],
                 stdout=subprocess.DEVNULL
             )
-            if proc.returncode:
+            if proc_returncode:
                 icon, status = "thumbs-down", "not running"
             else:
                 icon, status = "thumbs-up", "running"
@@ -140,7 +139,7 @@ def start_web_server():
                 key_prefix + "status": status
             }
 
-    httpd = server.HTTPServer(('', 8888), RequestHandler)
+    httpd = server.HTTPServer(("", 8888), RequestHandler)
     httpd.serve_forever()
 
 
