@@ -131,11 +131,12 @@ def start_web_server():
                 stdout=subprocess.DEVNULL
             )
             if proc_returncode:
-                icon, status = "thumbs-down", "not running"
+                iconcolor, icon, status = "d43939", "emoji-sad", "not running"
             else:
-                icon, status = "thumbs-up", "running"
+                iconcolor, icon, status = "28bd14", "emoji-happy", "running"
             return {
                 key_prefix + "icon": icon,
+                key_prefix + "iconcolor": iconcolor,
                 key_prefix + "status": status
             }
 

@@ -5,61 +5,64 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>PIA VPN</title>
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/chota@0.7.2">
     <style>
-      body {
-        padding-top: 40px;
-        padding-bottom: 40px;
-        background-color: #eee;
+      :root {
+        --font-size: 2rem;
       }
-      .form-vpn {
-        max-width: 330px;
-        padding: 15px;
-        margin: 0 auto;
+
+      .control-panel {
+        flex: 1;
+        flex-direction: column;
       }
-      .form-vpn .form-vpn-heading,
-      .form-vpn .form-vpn-status {
-        margin-bottom: 10px;
+
+      .hero {
+        display: flex;
       }
-      .form-vpn .form-control {
-        position: relative;
-        height: auto;
-        padding: 10px;
-        font-size: 16px;
-        box-sizing: border-box;
-        -webkit-box-sizing: border-box;
-        -moz-box-sizing: border-box;
+
+      .icon {
+        margin-right: 5px;
       }
     </style>
   </head>
   <body>
     <div class="container">
-      <form class="form-vpn" action="$path" method="post">
-        <h2 class="form-vpn-heading">PIA VPN status</h2>
-        <div class="form-vpn-status">
-          <span class="glyphicon glyphicon-$tmissionicon" aria-hidden="true"></span> Transmission is $tmissionstatus
+      <div class="hero is-full-screen">
+        <div class="control-panel is-center is-vertical-align">
+          <form action="$path" method="post">
+            <fieldset>
+              <legend>PIA VPN status</legend>
+              <p>
+                <span class="is-vertical-align">
+                  <img class="icon" src="https://icongr.am/entypo/$tmissionicon.svg?size=24&color=$tmissioniconcolor">
+                  Transmission is $tmissionstatus
+                </span>
+                <span class="is-vertical-align">
+                  <img class="icon" src="https://icongr.am/entypo/$piaicon.svg?size=24&color=$piaiconcolor">
+                  VPN is $piastatus
+                </span>
+              </p>
+              <strong>Apply command to:</strong>
+              <p>
+                <label class="is-vertical-align">
+                  <input type="radio" name="service" value="tmission"> Transmission
+                </label>
+                <label class="is-vertical-align">
+                  <input type="radio" name="service" value="pia" checked> Transmission & VPN
+                </label>
+              </p>
+              <p>
+                <button class="button success icon" type="submit" name="cmd" value="start">
+                  <img src="https://icongr.am/entypo/controller-play.svg?size=24&color=ffffff"> Start
+                </button>
+                <button class="button error icon" type="submit" name="cmd" value="stop">
+                  <img src="https://icongr.am/entypo/controller-stop.svg?size=24&color=ffffff"> Stop
+                </button>
+              </p>
+            </fieldset>
+          </form>
         </div>
-        <div class="form-vpn-status">
-          <span class="glyphicon glyphicon-$piaicon" aria-hidden="true"></span> PIA VPN is $piastatus
-        </div>
-        <label>Apply command to:</label>
-        <div class="radio">
-          <label>
-            <input type="radio" name="service" value="tmission"> Transmission
-          </label>
-        </div>
-        <div class="radio">
-          <label>
-            <input type="radio" name="service" value="pia" checked> Transmission + PIA VPN
-          </label>
-        </div>
-        <button class="btn btn-success btn-lg btn-block" type="submit" name="cmd" value="start">
-          <span class="glyphicon glyphicon-play" aria-hidden="true"></span> Start
-        </button>
-        <button class="btn btn-danger btn-lg btn-block" type="submit" name="cmd" value="stop">
-          <span class="glyphicon glyphicon-stop" aria-hidden="true"></span> Stop
-        </button>
-      </form>
+      </div>
     </div>
   </body>
 </html>
